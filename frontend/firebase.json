@@ -1,0 +1,7 @@
+{
+  "hosting": {
+    "public": "build",
+    "site": "chess-ts",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"]
+  }
+}

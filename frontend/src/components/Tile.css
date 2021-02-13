@@ -1,0 +1,51 @@
+.pieces {
+  height: 50px;
+}
+
+.black_pieces {
+  fill: black;
+  color: black;
+}
+
+.white_pieces {
+  fill: white;
+  color: white;
+}
+
+.tile.--on-check {
+  background: rgb(255, 0, 0);
+  background: radial-gradient(
+    circle,
+    rgba(255, 0, 0, 0.9) 0%,
+    rgba(190, 0, 0, 0.9) 100%
+  );
+  box-shadow: inset 0px 0px 30px rgba(0, 0, 0, 0.3);
+}
+
+.tile.--variant1 {
+  background: rgb(219, 159, 107);
+  background: radial-gradient(
+    circle,
+    rgba(239, 189, 137, 1) 0%,
+    rgba(190, 140, 97, 1) 100%
+  );
+}
+
+.tile.--variant2 {
+  background: rgb(160, 80, 60);
+  background: radial-gradient(
+    circle,
+    rgba(160, 80, 60, 1) 0%,
+    rgba(116, 67, 60, 1) 100%
+  );
+}
+
+.tile.--moved-last {
+  background: gold;
+  background: radial-gradient(
+    circle,
+    rgba(254, 205, 2, 1) 0%,
+    rgba(225, 168, 0, 1) 100%
+  );
+  box-shadow: inset 0px 0px 30px rgba(0, 0, 0, 0.3);
+}
