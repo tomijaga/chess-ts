@@ -1,5 +1,5 @@
-import { clone } from "usefull-fns/Object";
-import { fillArray } from "usefull-fns/Array";
+import { clone } from "utils/Object";
+import { fillArray } from "utils/Array";
 import { IDesignPieces } from "./Design";
 import { Bishop, King, Knight, Pawn, Piece, Queen, Rook } from "./Pieces";
 
@@ -11,7 +11,7 @@ export class SideClass {
   bishops: Bishop[] = [];
   rooks: Rook[] = [];
   capturedPieces: String[] = [];
-  onCheck:boolean = false;
+  onCheck: boolean = false;
 
   constructor(design: IDesignPieces, side: number) {
     let side_string: string = "white";

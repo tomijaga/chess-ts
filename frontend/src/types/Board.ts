@@ -5,7 +5,8 @@ import {
 import { IDesignPieces } from "./Design";
 import { Piece } from "./Pieces";
 import { SideEnum, SideClass } from "./Side";
-import { clone } from "usefull-fns/Object";
+import { clone } from "utils/Object";
+import { Move } from "chess";
 
 export interface ITilePosition {
   row: number;
@@ -24,21 +25,24 @@ export interface IMovePiece {
 
 export class TileClass {
   piece?: Piece;
-  variant:number;
+  variant: number;
 
-
-  constructor(variant:number) {
+  constructor(variant: number) {
     this.variant = variant;
   }
 }
 
-  const nodeEnvState=(dev:any, prod:any)=>{
-    if(process.env.NODE_ENV==="development"){
-     return dev;
-    }else{
-      return prod;
-    }
+export interface TileData {
+  lastMove: Move | undefined;
+}
+
+const nodeEnvState = (dev: any, prod: any) => {
+  if (process.env.NODE_ENV === "development") {
+    return dev;
+  } else {
+    return prod;
   }
+};
 
 export interface BoardSides {
   white: SideClass;
@@ -46,14 +50,13 @@ export interface BoardSides {
 }
 
 export class BoardClass {
-  player_side:String="white";
+  player_side: String = "white";
   sides: BoardSides;
   moves: IMovePiece[] = [];
   tiles: TileClass[][] = [];
-  onCheck: boolean= false;
+  onCheck: boolean = false;
 
   constructor(design: IDesignPieces) {
-
     this.sides = {
       white: new SideClass(design, SideEnum.white),
       black: new SideClass(design, SideEnum.black),
@@ -89,9 +92,9 @@ export class BoardClass {
     this.newGame();
   }
 
-  setSide = (side:String)=>{
+  setSide = (side: String) => {
     this.player_side = nodeEnvState("white", side);
-  }
+  };
 
   movePiece = (prev: ITilePosition, next: ITilePosition) => {
     if (!this.position_is_out_of_bounds(next)) {
@@ -123,7 +126,7 @@ export class BoardClass {
           switch (prev_tile.piece.side) {
             case "white":
               this.sides["white"].capture(next_tile.piece.type);
-          
+
               break;
             case "black":
               this.sides["black"].capture(next_tile.piece.type);
@@ -133,18 +136,17 @@ export class BoardClass {
               throw new Error("@movePiece. prev_tile's side does not exist ");
           }
         }
-  
+
         //move piece
         next_tile.piece = prev_tile.piece;
         next_tile.piece.location = next;
         prev_tile.piece = undefined;
-        const move:IMovePiece ={ prev, next };
+        const move: IMovePiece = { prev, next };
         this.moves.push(move);
 
         //are the kings on check?
         this.sides.black.onCheck = this.is_on_check("black");
         this.sides.white.onCheck = this.is_on_check("white");
-        
 
         return move;
       } else {
@@ -155,11 +157,11 @@ export class BoardClass {
     }
   };
 
-  private clearTiles =()=>{
-    this.traverse_tiles((tile)=>{
+  private clearTiles = () => {
+    this.traverse_tiles((tile) => {
       tile.piece = undefined;
-    })
-  }
+    });
+  };
 
   newGame = () => {
     this.clearTiles();
@@ -201,7 +203,7 @@ export class BoardClass {
     this.set_pawns();
   };
 
-  private is_on_check = (side: string): boolean  => {
+  private is_on_check = (side: string): boolean => {
     switch (side) {
       case "white":
         if (this.sides.white.king.location) {
@@ -227,7 +229,6 @@ export class BoardClass {
             }
           }
         }
-        
 
         break;
       case "black":
@@ -247,10 +248,8 @@ export class BoardClass {
               );
 
               for (let j = 0; j < possible_moves.length; ++j) {
-           
-
                 const move = possible_moves[j];
-                 if (move.column === kings_column && move.row === kings_row)
+                if (move.column === kings_column && move.row === kings_row)
                   return true;
               }
             }
@@ -297,13 +296,14 @@ export class BoardClass {
     }
   };
 
-  valid_moves_if_on_check=()=>{
-      const {column: k_column, row: k_row}:ITilePosition = this.sides["white"].king.location;
-      const kingsMoves = this.possible_moves_from_tile(this.tiles[k_column][k_row]);
-  
-  }
-
-
+  valid_moves_if_on_check = () => {
+    const { column: k_column, row: k_row }: ITilePosition = this.sides[
+      "white"
+    ].king.location;
+    const kingsMoves = this.possible_moves_from_tile(
+      this.tiles[k_column][k_row]
+    );
+  };
 
   private map_piece_to_move = (
     tile_position: ITilePosition,

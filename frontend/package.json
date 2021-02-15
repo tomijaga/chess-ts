@@ -30,7 +30,7 @@
     "rs-start": "react-scripts start",
     "start": "NODE_ENV=development && npm run rs-start",
     "build": "react-scripts build",
-    "server-build": "npm run build && cp -r ./build ../server",
+    "server-build": "npm run build && cp -r ./build/* ../server/public",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

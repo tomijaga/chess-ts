@@ -1,5 +1,5 @@
 import { Pawn } from "types/Pieces";
-import { clone } from "usefull-fns/Object";
+import { clone } from "utils/Object";
 
 export const fillArray = <T extends unknown>(item: any, size: number): T[] => {
   const arr: T[] = [];
