@@ -8,6 +8,7 @@ import { ITilePosition, TileClass } from "../types/Board";
 import { TileDataContext } from "context/Board";
 
 import { classic } from "designs/pieces";
+import { possibleEnPassant } from "utils/Chess";
 
 const PossibleMove: FC<{ capture?: boolean }> = ({ capture }) => {
   return (
@@ -33,13 +34,15 @@ const PossibleMove: FC<{ capture?: boolean }> = ({ capture }) => {
 
 const Tile: FC<{
   tile: Square;
-  onClick: (event: MouseEvent) => void;
+  onClick?: (event: MouseEvent) => void;
   on_check: boolean;
   moved_last: boolean;
   show_move: boolean;
   style: CSSProperties;
 }> = ({ show_move, tile, onClick, on_check, moved_last, style, children }) => {
-  const { lastMove } = useContext(TileDataContext);
+  const { lastMove, kingOnCheck, selectedTile, playerSide } = useContext(
+    TileDataContext
+  );
 
   const determineVariant = () => {
     const oddAlphabets = ["a", "c", "e", "g"];
@@ -99,6 +102,15 @@ const Tile: FC<{
       (lastMove.postFile === tile.file && lastMove.postRank === tile.rank);
   }
 
+  if (kingOnCheck !== undefined) {
+    on_check = kingOnCheck.file === tile.file && kingOnCheck.rank === tile.rank;
+  }
+
+  const showEnPassant =
+    selectedTile !== undefined && selectedTile.piece
+      ? possibleEnPassant(selectedTile, tile)
+      : false;
+
   return (
     <>
       <div
@@ -110,8 +122,6 @@ const Tile: FC<{
           !on_check && !moved_last && determineVariant()
         )}
         style={{
-          height: "100%",
-          width: "100%",
           fontSize: "small",
           display: "flex",
           justifyContent: "center",
@@ -120,8 +130,37 @@ const Tile: FC<{
         }}
       >
         {tilePiece()}
+
         {show_move === true ? (
-          <PossibleMove capture={tile.piece !== null} />
+          <PossibleMove capture={tile.piece !== null || showEnPassant} />
+        ) : (
+          <></>
+        )}
+
+        {tile.file === "a" ? (
+          <div style={{ position: "absolute", top: "5px", left: "5px" }}>
+            {tile.rank}
+          </div>
+        ) : (
+          <></>
+        )}
+
+        {playerSide === "white" ? (
+          tile.rank === 1 ? (
+            <div style={{ position: "absolute", bottom: "5px", right: "5px" }}>
+              {tile.file}
+            </div>
+          ) : (
+            <></>
+          )
+        ) : playerSide === "black" ? (
+          tile.rank === 8 ? (
+            <div style={{ position: "absolute", bottom: "5px", right: "5px" }}>
+              {tile.file}
+            </div>
+          ) : (
+            <></>
+          )
         ) : (
           <></>
         )}

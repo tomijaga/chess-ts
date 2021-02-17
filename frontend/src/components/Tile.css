@@ -12,6 +12,11 @@
   color: white;
 }
 
+.tile {
+  width: 60px;
+  height: 60px;
+}
+
 .tile.--on-check {
   background: rgb(255, 0, 0);
   background: radial-gradient(

@@ -6,7 +6,7 @@ import { IDesignPieces } from "./Design";
 import { Piece } from "./Pieces";
 import { SideEnum, SideClass } from "./Side";
 import { clone } from "utils/Object";
-import { Move } from "chess";
+import { Move, Square } from "chess";
 
 export interface ITilePosition {
   row: number;
@@ -34,6 +34,9 @@ export class TileClass {
 
 export interface TileData {
   lastMove: Move | undefined;
+  kingOnCheck?: Square;
+  selectedTile?: Square;
+  playerSide: string;
 }
 
 const nodeEnvState = (dev: any, prod: any) => {

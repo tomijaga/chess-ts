@@ -15,7 +15,7 @@ app.use(cors());
 const server = http.createServer(app);
 const io = requirejs("socket.io")(server);
 
-app.use(express.static(path.resolve(__dirname, "build")));
+app.use(express.static(path.resolve(__dirname, "public")));
 
 server.listen(process.env.PORT || 8080, function () {
   console.log(`Listening on ${server.address().port}`);
@@ -89,6 +89,11 @@ io.on("connection", function (socket) {
     console.log({ game_id, move, turn });
     socket.to(game_id).emit("move", move, turn);
   });
+
+  // socket.on("send-checkmate", (game_id) => {
+  //   console.log({ game_id });
+  //   socket.to(game_id).emit("checkmate", true);
+  // });
 
   socket.on("disconnecting", () => {
     // console.log({ room: socket.rooms }); // the Set contains at least the socket ID
