@@ -44,8 +44,6 @@ const nodeEnvState = (dev: any, prod: any) => {
   }
 };
 
-board.setSide(nodeEnvState("white", ""));
-
 let gameClient = chess.create({ PGN: true });
 
 const Board = () => {
@@ -63,6 +61,7 @@ const Board = () => {
   const [isStaleMate, setIsStaleMate] = useState(false);
   const [isRepitition, setIsRepitition] = useState(false);
   const [pauseGame, setPauseGame] = useState(true);
+  const [winner, setWinner] = useState("");
 
   useEffect(() => {
     socket.on("game-id", (id: string) => {

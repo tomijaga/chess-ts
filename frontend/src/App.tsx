@@ -24,7 +24,7 @@ function App() {
             Play Tournament
           </button>
           <button onClick={() => setBoardType("botVbot")}>Bot Vs Bot</button>
-          <button onClick={() => setBoardType("friend")}>Watch Game</button>
+          <button onClick={() => setBoardType("watch")}>Watch Game</button>
         </div>
         {/* <BoardContext.Provider> */}
         {boardType === "solo" ? (

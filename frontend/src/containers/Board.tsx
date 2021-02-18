@@ -30,8 +30,6 @@ import { calculatePGN, possiblePromotion } from "utils/Chess";
 import { BoardContext } from "context/Board";
 import { io } from "socket.io-client";
 
-const board = new BoardClass(classic);
-
 const socket = io();
 
 export interface PlayerSides {
@@ -47,27 +45,28 @@ const nodeEnvState = (dev: any, prod: any) => {
   }
 };
 
-board.setSide(nodeEnvState("white", ""));
-
 let gameClient = chess.create({ PGN: true });
 
 const Board = () => {
   const [game_id, set_game_id] = useState("");
-  const [disable_pieces, set_disable_pieces] = useState(false);
-  const [player_side, set_player_side] = useState(nodeEnvState("white", ""));
+  const [disable_pieces, set_disable_pieces] = useState(true);
+  const [player_side, set_player_side] = useState(nodeEnvState("", ""));
   const [tiles_as_jsx, set_tiles_as_jsx] = useState<JSX.Element[]>();
   const [selected_tile, set_selected_tile] = useState<Square>();
-  const [turn_to_play, set_turn_to_play] = useState(nodeEnvState("white", ""));
+  const [turn_to_play, set_turn_to_play] = useState("");
   const [last_move, set_last_move] = useState<Move>();
   const [movesToDisplay, setMovesToDisplay] = useState<Square[]>();
   const [history, setHistory] = useState(gameClient.game.moveHistory);
   const [kingOnCheck, setKingOnCheck] = useState<Square>();
   const [promotion, setPromotion] = useState("Q");
-  const [isCheckMate, setIsCheckMate] = useState(false);
-  const [isStaleMate, setIsStaleMate] = useState(false);
-  const [isRepitition, setIsRepitition] = useState(false);
+  const [isGameOver, setIsGameOver] = useState(false);
+  const [gameResults, setGameResults] = useState<{
+    winingSide: string;
+    endedBy: string;
+  }>();
 
-  useEffect(() => {
+  const startGame = () => {
+    socket.emit("connect-to-game");
     socket.on("game-id", (id: string) => {
       set_game_id(id);
       console.log({ game_id: id });
@@ -84,14 +83,23 @@ const Board = () => {
       console.log(socket.id, sides);
     });
 
-    socket.on("move", (move: Move) => {
-      gameClient.move(move.algebraic);
-      nodeEnvState("", set_turn_to_play(player_side));
-
+    socket.on("move", (move: Move, turn: string) => {
       console.log({ socketIOSentMove: move });
+
+      gameClient.move(move.algebraic);
+      set_turn_to_play(turn);
+
       updateView();
     });
-  }, []);
+  };
+
+  const gameOver = (endedBy: string, winingSide: string) => {
+    set_disable_pieces(true);
+    setIsGameOver(true);
+    setGameResults({ endedBy, winingSide });
+  };
+
+  useEffect(() => {}, []);
 
   useEffect(() => {
     map_tile_data_to_jsx();
@@ -103,6 +111,7 @@ const Board = () => {
     movesToDisplay,
     kingOnCheck,
     history,
+    disable_pieces,
   ]);
 
   useEffect(() => {
@@ -127,12 +136,6 @@ const Board = () => {
       console.log(square);
     });
 
-    // gameClient.on("move", (move) => {
-    //   console.log("A piece was moved!");
-    //   console.log({ game_id });
-    //   // console.log(move);
-    // });
-
     gameClient.on("capture", (move) => {
       console.log("A piece has been captured!");
       console.log(move);
@@ -141,7 +144,7 @@ const Board = () => {
     gameClient.on("checkmate", ({ attackingSquare, kingSquare }) => {
       console.log("The game has ended due to checkmate!");
       setKingOnCheck(() => kingSquare);
-      setIsCheckMate(true);
+      gameOver("Check Mate", turn_to_play);
       console.log(kingSquare);
     });
   }, [game_id]);
@@ -208,10 +211,9 @@ const Board = () => {
 
                 const { move } = gameClient.move(pgn);
                 console.log(move);
-                socket.emit("send-move", game_id, move, "white");
+                socket.emit("send-move", game_id, move, next_turn());
                 setMovesToDisplay([]);
                 set_turn_to_play(next_turn());
-                nodeEnvState("", set_turn_to_play(next_turn()));
                 set_selected_tile(undefined);
                 updateView();
                 // console.log(gameClient.getStatus().notatedMoves);
@@ -235,7 +237,7 @@ const Board = () => {
   }
 
   const next_turn = () => {
-    return turn_to_play === "white" ? "black" : "white";
+    return player_side === "white" ? "black" : "white";
   };
 
   const updateGameData = () => {
@@ -251,18 +253,79 @@ const Board = () => {
     display: "grid",
     gridTemplateColumns: "repeat(8, 1fr)",
     gridTemplateRows: "repeat(8, 1fr)",
-
     transform: player_side === "white" ? "rotate(180deg) rotateY(180deg)" : "",
   };
 
   return (
     <div>
+      {disable_pieces === true && game_id === "" && turn_to_play === "" ? (
+        <div
+          style={{ position: "absolute", top: "50%", left: "50%", zIndex: "2" }}
+        >
+          <div
+            style={{
+              background: "rgba(45, 150, 79, 1)",
+              boxShadow: "0px 0px 200px 80px rgba(0,0,0, 0.6)",
+              fontSize: "larger",
+              fontWeight: "bold",
+              color: "white",
+              borderRadius: "5px",
+              position: "relative",
+              width: "200px",
+              height: "auto",
+              padding: "10px",
+              top: "-50%",
+              left: "-50%",
+              cursor: "pointer",
+            }}
+            onClick={() => {
+              set_disable_pieces(false);
+              startGame();
+              set_turn_to_play("white");
+            }}
+          >
+            Play
+          </div>
+        </div>
+      ) : (
+        <></>
+      )}
+
+      {disable_pieces === true && (game_id !== "" || turn_to_play !== "") ? (
+        <div
+          style={{ position: "absolute", top: "50%", left: "50%", zIndex: "3" }}
+        >
+          <div
+            style={{
+              background: "rgba(180, 34, 34, 1)",
+              boxShadow: "0px 0px 20px 10px rgba(0,0,0, 0.6)",
+              fontSize: "larger",
+              fontWeight: "bold",
+              color: "white",
+              borderRadius: "5px",
+              position: "relative",
+              width: "200px",
+              height: "auto",
+              padding: "10px",
+              top: "-50%",
+              left: "-50%",
+              cursor: "pointer",
+            }}
+          >
+            Game Over
+          </div>
+        </div>
+      ) : (
+        <></>
+      )}
+
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
           margin: "10px 50px",
           width: "100%",
+          flexWrap: "wrap",
         }}
       >
         <h6>game_id: {game_id}</h6>
@@ -284,7 +347,13 @@ const Board = () => {
             playerSide: player_side,
           }}
         >
-          <ClockTimer turn_to_play={turn_to_play}>
+          <ClockTimer
+            onTimeUp={(winingSide: string) => {
+              gameOver("Time Up", winingSide);
+            }}
+            player_side={player_side}
+            turn_to_play={turn_to_play}
+          >
             <div style={boardStyle}>{tiles_as_jsx}</div>
           </ClockTimer>
         </TileDataContext.Provider>

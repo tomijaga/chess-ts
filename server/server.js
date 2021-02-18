@@ -4,8 +4,11 @@ import express from "express";
 import requirejs from "requirejs";
 import { nanoid } from "nanoid";
 import cors from "cors";
+import mongoose from "mongoose";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+
+import { OnlineGameModel } from "./models/games/OnlineGameModel.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -17,20 +20,116 @@ const io = requirejs("socket.io")(server);
 
 app.use(express.static(path.resolve(__dirname, "public")));
 
-server.listen(process.env.PORT || 8080, function () {
-  console.log(`Listening on ${server.address().port}`);
+mongoose.connect(
+  "mongodb+srv://tomijaga:tomijaga@cryptochess.c2ssk.mongodb.net/games?retryWrites=true&w=majority",
+  {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    useFindAndModify: false,
+    useCreateIndex: true,
+  }
+);
+
+let db = mongoose.connection;
+
+db.on("error", console.error.bind(console, "connection error!"));
+db.once("open", async () => {
+  server.listen(process.env.PORT || 8080, function () {
+    console.log(`Listening on ${server.address().port}`);
+  });
 });
 
 const games = [];
 const connections = [];
 
+io.on("connection", function (socket) {
+  connections.push(socket);
+
+  socket.on("connect-to-game", () => {
+    const last_game = games[games.length - 1];
+    if (last_game) {
+      if (last_game.players.length === 2) {
+        create_game();
+      } else {
+        start_game();
+      }
+    } else {
+      create_game();
+    }
+  });
+
+  console.log(connections.length + " connected");
+
+  socket.on("send-move", (game_id, move, turn) => {
+    // const game = await OnlineGameModel.findById(
+    //   mongoose.Types.ObjectId(game_id)
+    // );
+
+    // game.moveHistory.push(move);
+    // await game.save();
+
+    socket.to(game_id.toString()).emit("move", move, turn);
+    // io.emit("move", move);
+    console.log({ room: socket.rooms });
+    console.log({ game_id, move, turn });
+  });
+
+  socket.on("disconnecting", () => {
+    // console.log({ room: socket.rooms }); // the Set contains at least the socket ID
+  });
+
+  socket.on("disconnect", function () {
+    // delete players[socket.id];
+    // socket.emit("disconnect", socket.id);
+
+    connections.splice(connections.indexOf(socket), 1);
+    console.log("user disconnected");
+    console.log(socket.rooms);
+  });
+
+  console.log(games);
+
+  //functions
+
+  function create_game() {
+    const game = new Game();
+    game.add_player(socket.id);
+    socket.join(game.id.toString());
+    socket.emit("game-id", game.id);
+
+    console.log("Created Game");
+    console.log("game id:", game.id, "player id:", socket.id);
+
+    games.push(game);
+  }
+
+  function start_game() {
+    const game = games[games.length - 1];
+    game.add_player(socket.id);
+    socket.join(game.id.toString());
+    socket.emit("game-id", game.id);
+    console.log("game id:", game.id, "player id:", socket.id);
+
+    const sides = game.choose_sides();
+    io.to(game.id.toString()).emit("sides", sides);
+    console.log("chosen sides", sides);
+
+    console.log("creating database record");
+    const newGame = new OnlineGameModel({ _id: game.id, players: sides });
+    newGame.save().then(() => {
+      console.log("Starting game ...");
+    });
+  }
+});
+
 class Game {
   players = [];
   white = {};
   black = {};
+  moveHistory = [];
 
   constructor() {
-    this.id = nanoid();
+    this.id = mongoose.Types.ObjectId();
   }
 
   add_player = (player_id) => {
@@ -67,72 +166,3 @@ class Player {
     this.id = id;
   }
 }
-
-console.log(games);
-io.on("connection", function (socket) {
-  connections.push(socket);
-
-  const last_game = games[games.length - 1];
-  if (last_game) {
-    if (last_game.players.length === 2) {
-      create_game();
-    } else {
-      start_game();
-    }
-  } else {
-    create_game();
-  }
-
-  console.log(connections.length + " connected");
-
-  socket.on("send-move", (game_id, move, turn) => {
-    console.log({ game_id, move, turn });
-    socket.to(game_id).emit("move", move, turn);
-  });
-
-  // socket.on("send-checkmate", (game_id) => {
-  //   console.log({ game_id });
-  //   socket.to(game_id).emit("checkmate", true);
-  // });
-
-  socket.on("disconnecting", () => {
-    // console.log({ room: socket.rooms }); // the Set contains at least the socket ID
-  });
-
-  socket.on("disconnect", function () {
-    // delete players[socket.id];
-    // socket.emit("disconnect", socket.id);
-
-    connections.splice(connections.indexOf(socket), 1);
-    console.log("user disconnected");
-    console.log(socket.rooms);
-  });
-
-  //functions
-
-  function create_game() {
-    const game = new Game();
-    game.add_player(socket.id);
-    socket.join(game.id);
-    socket.emit("game-id", game.id);
-
-    console.log("Created Game");
-    console.log("game id:", game.id, "player id:", socket.id);
-
-    games.push(game);
-  }
-
-  function start_game() {
-    const game = games[games.length - 1];
-    game.add_player(socket.id);
-    socket.join(game.id);
-    socket.emit("game-id", game.id);
-    console.log("game id:", game.id, "player id:", socket.id);
-
-    const sides = game.choose_sides();
-    io.to(game.id).emit("sides", sides);
-    console.log("chosen sides", sides);
-
-    console.log("Starting game ...");
-  }
-});

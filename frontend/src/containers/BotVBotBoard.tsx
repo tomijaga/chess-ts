@@ -26,12 +26,7 @@ import { classic, classic_outlined } from "designs/pieces";
 
 import { calculatePGN, possiblePromotion } from "utils/Chess";
 import { BoardContext } from "context/Board";
-import { io } from "socket.io-client";
 import { setInterval } from "timers";
-
-const board = new BoardClass(classic);
-
-const socket = io();
 
 export interface PlayerSides {
   white: string;
@@ -45,8 +40,6 @@ const nodeEnvState = (dev: any, prod: any) => {
     return prod;
   }
 };
-
-board.setSide(nodeEnvState("white", ""));
 
 let gameClient = chess.create({ PGN: true });
 
@@ -65,31 +58,6 @@ const Board = () => {
   const [isStaleMate, setIsStaleMate] = useState(false);
   const [isRepitition, setIsRepitition] = useState(false);
   const [pauseGame, setPauseGame] = useState(true);
-
-  useEffect(() => {
-    socket.on("game-id", (id: string) => {
-      set_game_id(id);
-      console.log({ game_id: id });
-    });
-
-    socket.on("sides", (sides: PlayerSides) => {
-      if (sides.white === socket.id) {
-        set_player_side("white");
-      } else {
-        set_player_side("black");
-      }
-
-      updateView();
-      console.log(socket.id, sides);
-    });
-
-    socket.on("move", (move: Move) => {
-      gameClient.move(move.algebraic);
-      //set_turn_to_play(turn);
-      console.log({ socketIOSentMove: move });
-      updateView();
-    });
-  }, []);
 
   useEffect(() => {
     map_tile_data_to_jsx();
