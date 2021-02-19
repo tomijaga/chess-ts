@@ -153,14 +153,10 @@ const Tile: FC<{
           ) : (
             <></>
           )
-        ) : playerSide === "black" ? (
-          tile.rank === 8 ? (
-            <div style={{ position: "absolute", bottom: "5px", right: "5px" }}>
-              {tile.file}
-            </div>
-          ) : (
-            <></>
-          )
+        ) : tile.rank === 8 ? (
+          <div style={{ position: "absolute", bottom: "5px", right: "5px" }}>
+            {tile.file}
+          </div>
         ) : (
           <></>
         )}

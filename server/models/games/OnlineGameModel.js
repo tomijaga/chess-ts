@@ -45,4 +45,13 @@ let onlineGameSchema = Schema({
   moveHistory: [Move],
 });
 
+const getGame = (id) => mongoose.model("online").findById(id);
+
+onlineGameSchema.statics.addMove = (gameID, move, cb) => {
+  mongoose
+    .model("online")
+    .updateOne({ _id: gameID }, { $push: { moveHistory: move } })
+    .exec(cb);
+};
+
 export const OnlineGameModel = mongoose.model("online", onlineGameSchema);

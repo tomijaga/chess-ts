@@ -9,12 +9,15 @@ import { fileURLToPath } from "url";
 import { dirname } from "path";
 
 import { OnlineGameModel } from "./models/games/OnlineGameModel.js";
+import { gamesRoute } from "./routes/games.route.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const app = express();
 app.use(cors());
+app.use("/", gamesRoute);
+
 const server = http.createServer(app);
 const io = requirejs("socket.io")(server);
 
@@ -60,18 +63,12 @@ io.on("connection", function (socket) {
 
   console.log(connections.length + " connected");
 
-  socket.on("send-move", (game_id, move, turn) => {
-    // const game = await OnlineGameModel.findById(
-    //   mongoose.Types.ObjectId(game_id)
-    // );
-
-    // game.moveHistory.push(move);
-    // await game.save();
+  socket.on("send-move", async (game_id, move, turn) => {
+    OnlineGameModel.addMove(mongoose.Types.ObjectId(game_id), move);
 
     socket.to(game_id.toString()).emit("move", move, turn);
-    // io.emit("move", move);
-    console.log({ room: socket.rooms });
-    console.log({ game_id, move, turn });
+
+    // console.log({ game_id, move, turn });
   });
 
   socket.on("disconnecting", () => {

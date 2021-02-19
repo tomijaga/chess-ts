@@ -29,8 +29,6 @@ import { BoardContext } from "context/Board";
 import { io } from "socket.io-client";
 import { setInterval } from "timers";
 
-const socket = io();
-
 export interface PlayerSides {
   white: string;
   black: string;
@@ -46,7 +44,13 @@ const nodeEnvState = (dev: any, prod: any) => {
 
 let gameClient = chess.create({ PGN: true });
 
-const Board = () => {
+interface Game {
+  _id: string;
+  players: { white: string; black: string };
+  moveHistory: Move[];
+}
+
+const Board: FC<{ game: Game }> = ({ game }) => {
   const [game_id, set_game_id] = useState("");
   const [disable_pieces, set_disable_pieces] = useState(false);
   const [player_side, set_player_side] = useState(nodeEnvState("white", ""));
@@ -63,30 +67,34 @@ const Board = () => {
   const [pauseGame, setPauseGame] = useState(true);
   const [winner, setWinner] = useState("");
 
+  const [playButton, setPlayButton] = useState(false);
+  const [moveIndex, setMoveIndex] = useState(0);
+  const [storeIndex, setStoreIndex] = useState(0);
+  const [speed, setSpeed] = useState(1000);
+
   useEffect(() => {
-    socket.on("game-id", (id: string) => {
-      set_game_id(id);
-      console.log({ game_id: id });
-    });
+    let i = moveIndex;
+    const withinHistoryLimits = i < game?.moveHistory.length && i >= 0;
 
-    socket.on("sides", (sides: PlayerSides) => {
-      if (sides.white === socket.id) {
-        set_player_side("white");
-      } else {
-        set_player_side("black");
+    const interval = setInterval(() => {
+      if (playButton === true && withinHistoryLimits) {
+        gameClient.move(game?.moveHistory[i++].algebraic);
+        console.log(playButton);
+
+        setStoreIndex(() => i);
       }
+      // else if (playButton === false ) {
+      //   if(){
 
-      updateView();
-      console.log(socket.id, sides);
-    });
+      //   }
+      // }
+    }, 1000);
 
-    socket.on("move", (move: Move) => {
-      gameClient.move(move.algebraic);
-      //set_turn_to_play(turn);
-      console.log({ socketIOSentMove: move });
-      updateView();
-    });
-  }, []);
+    // clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+    };
+  }, [moveIndex, speed, playButton]);
 
   useEffect(() => {
     map_tile_data_to_jsx();
@@ -209,20 +217,9 @@ const Board = () => {
     transform: player_side === "white" ? "rotate(180deg) rotateY(180deg)" : "",
   };
 
-  const randomnMoves = () =>
-    setInterval(() => {
-      const moves = gameClient.getStatus().notatedMoves;
-      const options = Object.keys(moves);
-      const choice = options[Math.floor(Math.random() * options.length)];
-      console.log(choice);
-      gameClient.move(choice);
-    }, 500);
-
-  const startGame = () => randomnMoves();
-  const endGame = () => {
-    clearInterval(randomnMoves());
+  const retrieveStoredIndex = () => {
+    setMoveIndex(storeIndex);
   };
-
   return (
     <div>
       <div
@@ -247,7 +244,30 @@ const Board = () => {
         }}
       >
         <div>
-          <button onClick={startGame}>start game!</button>
+          <button>first move</button>
+
+          <button>previous move</button>
+
+          <button
+            onClick={() => {
+              setPlayButton((prevValue) => !prevValue);
+              retrieveStoredIndex();
+            }}
+          >
+            {playButton ? "pause game" : "start game!"}
+          </button>
+
+          <button
+            onClick={() => {
+              setMoveIndex(storeIndex + 1);
+              setPlayButton((prevValue) => !prevValue);
+            }}
+          >
+            next move
+          </button>
+
+          <button>last move</button>
+
           {/* <button onClick={endGame}>End Game</button> */}
         </div>
         <div style={boardStyle}>{tiles_as_jsx}</div>
