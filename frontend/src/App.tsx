@@ -15,6 +15,13 @@ import { BrowserRouter as Router, Route, NavLink } from "react-router-dom";
 import axios from "axios";
 import { Move } from "chess";
 
+import {
+  Account,
+  Bank,
+  ConfirmationValidator,
+  PrimaryValidator,
+} from "thenewboston/src";
+
 interface Game {
   _id: string;
   players: { white: string; black: string };
@@ -33,13 +40,15 @@ function App() {
     axios.get(`${SERVER}/games`).then((res) => {
       setGames(res.data);
     });
+
+    console.log(Bank);
   }, []);
 
   return (
     <div className="App">
       <header className="App-header">
         <div style={{ display: "flex", flexWrap: "wrap" }}>
-          <button onClick={() => setBoardType("solo")}>Play Solo</button>
+          <button onClick={() => setBoardType("friend")}>Play Friend</button>
           <button onClick={() => setBoardType("online")}>Play Online</button>
           <button onClick={() => setBoardType("tournament")}>
             Play Tournament
@@ -48,7 +57,7 @@ function App() {
           <button onClick={() => setBoardType("watch")}>Watch Game</button>
         </div>
         {/* <BoardContext.Provider> */}
-        {boardType === "solo" ? (
+        {boardType === "friend" ? (
           <div>Coming Soon!</div>
         ) : boardType === "botVbot" ? (
           <BotVBotBoard />
