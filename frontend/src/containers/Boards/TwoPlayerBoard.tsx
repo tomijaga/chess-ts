@@ -29,7 +29,7 @@ const TwoPlayerBoard = () => {
   const [opponent, setOpponent] = useState("");
   const [username, setUsername] = useState("");
 
-  const [gameSettings, setGameSettings] = useState<any>();
+  const [gameSettings, setGameSettings] = useState<any>({} as any);
 
   const [startGame, setStartGame] = useState(false);
 
@@ -63,35 +63,42 @@ const TwoPlayerBoard = () => {
     });
 
     if (values.activity === "createGame") {
-      //stake coin
-      if (tnb_keysign) {
-        console.log("in Keysign");
-        console.log(tnb_keysign);
-        await tnb_keysign.requestHandshake(() =>
-          console.log("Keysign is installed!")
-        );
+      if (!hasStaked) {
+        //stake coin
+        if (tnb_keysign) {
+          console.log("in Keysign");
+          console.log(tnb_keysign);
+          await tnb_keysign.requestHandshake(() =>
+            console.log("Keysign is installed!")
+          );
 
-        await tnb_keysign.requestVerify(values.accountNumber, (res) =>
-          console.log(res)
-        );
-        await tnb_keysign.requestTransfer(
-          "8de30226230c35bbc1ce4a63c62a7b9c86bf0ce21fc7bc1a984b7884a9f88782",
-          values.stakedAmount,
-          (res) => console.log(res)
-        );
+          await tnb_keysign.requestVerify(values.accountNumber, (res) =>
+            console.log(res)
+          );
+          await tnb_keysign.requestTransfer(
+            "8de30226230c35bbc1ce4a63c62a7b9c86bf0ce21fc7bc1a984b7884a9f88782",
+            values.stakedAmount,
+            (res) => {
+              if (true) {
+                setHasStaked(true);
+              }
+            }
+          );
+        }
+      } else {
+        //call on success
+        socket.on("game-id", (gameId: string) => {
+          setGameId(() => gameId);
+          setIsFormFilled(true);
+        });
+
+        //call server to create game
+        socket.emit("create-game", values.username, gameSettings);
       }
-
-      //call on success
-      socket.on("game-id", (gameId: string) => {
-        setGameId(() => gameId);
-        setIsFormFilled(true);
-      });
-
-      //call server to create game
-      socket.emit("create-game", values.username, gameSettings);
     } else if (values.activity === "joinGame") {
       socket.on("game-details", (gameSettings) => {
         if (gameSettings) {
+          console.log({ gameSettings });
           setGameSettings(gameSettings);
           setIsFormFilled(true);
         } else {
@@ -134,7 +141,7 @@ const TwoPlayerBoard = () => {
       }
     } else {
       //proceed to game
-      socket.emit("join-game", values.gameId, values.username);
+      socket.emit("join-game", gameSettings.id, username);
     }
   };
 
@@ -184,8 +191,7 @@ const TwoPlayerBoard = () => {
                     form={form}
                     layout="horizontal"
                     name="joinGame"
-                    onValuesChange={onActivityChange}
-                    onFinish={onFinish}
+                    onFinish={onJoinGame}
                   >
                     {" "}
                     <Form.Item
@@ -271,6 +277,15 @@ const TwoPlayerBoard = () => {
                   >
                     <Input />
                   </Form.Item>
+                  <Form.Item label="Time" name="time">
+                    <Radio.Group value={"3"}>
+                      <Radio.Button value="1">1 min</Radio.Button>
+                      <Radio.Button value="2">2 min</Radio.Button>
+                      <Radio.Button value="3">3 min</Radio.Button>
+                      <Radio.Button value="5">5 min</Radio.Button>
+                      <Radio.Button value="10">10 min</Radio.Button>
+                    </Radio.Group>
+                  </Form.Item>
                   <Form.Item
                     name="stakedAmount"
                     label="Stake Amount"
@@ -292,15 +307,15 @@ const TwoPlayerBoard = () => {
                       <Select.Option value="1000">1000 TNBC</Select.Option>
                     </Select>
                   </Form.Item>
-
-                  <Form.Item label="Time" name="time">
-                    <Radio.Group value={"3"}>
-                      <Radio.Button value="1">1 min</Radio.Button>
-                      <Radio.Button value="2">2 min</Radio.Button>
-                      <Radio.Button value="3">3 min</Radio.Button>
-                      <Radio.Button value="5">5 min</Radio.Button>
-                      <Radio.Button value="10">10 min</Radio.Button>
-                    </Radio.Group>
+                  <Form.Item>
+                    <Button
+                      style={{ marginTop: 16 }}
+                      disabled={hasStaked}
+                      htmlType="submit"
+                      type="primary"
+                    >
+                      Stake Coins
+                    </Button>
                   </Form.Item>
                 </>
               ) : (
@@ -314,8 +329,12 @@ const TwoPlayerBoard = () => {
               )}
 
               <Form.Item>
-                <Button type="primary" htmlType="submit">
-                  {activity === "createGame" ? "Create Game" : "Join Game"}
+                <Button
+                  type="primary"
+                  disabled={!hasStaked && activity === "createGame"}
+                  htmlType="submit"
+                >
+                  {activity === "createGame" ? "Create Game" : "Retrieve Game"}
                 </Button>
               </Form.Item>
             </Form>
