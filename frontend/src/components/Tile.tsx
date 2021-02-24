@@ -98,8 +98,10 @@ const Tile: FC<{
 
   if (lastMove !== undefined) {
     moved_last =
-      (lastMove.prevFile === tile.file && lastMove.prevRank === tile.rank) ||
-      (lastMove.postFile === tile.file && lastMove.postRank === tile.rank);
+      (lastMove.prevSquare.file === tile.file &&
+        lastMove.prevSquare.rank === tile.rank) ||
+      (lastMove.postSquare.file === tile.file &&
+        lastMove.postSquare.rank === tile.rank);
   }
 
   if (kingOnCheck !== undefined) {

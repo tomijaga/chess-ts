@@ -28,9 +28,9 @@ import { classic, classic_outlined } from "designs/pieces";
 
 import { calculatePGN, possiblePromotion } from "utils/Chess";
 import { BoardContext } from "context/Board";
-import { io } from "socket.io-client";
+import io from "socket.io-client";
 
-const socket = io();
+const socket = io("http://localhost:8080");
 
 export interface PlayerSides {
   white: string;

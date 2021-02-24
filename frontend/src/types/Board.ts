@@ -8,6 +8,8 @@ import { SideEnum, SideClass } from "./Side";
 import { clone } from "utils/Object";
 import { Move, Square } from "chess";
 
+export type Side = "white" | "black";
+
 export interface ITilePosition {
   row: number;
   column: number;
@@ -32,8 +34,27 @@ export class TileClass {
   }
 }
 
+export interface PlayedMoveMove {
+  algebraic: string;
+  capturedPiece?: Piece;
+  castle: boolean;
+  enPassant: boolean;
+  postSquare: Square;
+  prevSquare: Square;
+}
+
+export interface PlayerSides {
+  white: string;
+  black: string;
+}
+
+export interface GameResults {
+  endedBy: string;
+  winingSide: Side;
+}
+
 export interface TileData {
-  lastMove: Move | undefined;
+  lastMove: PlayedMoveMove | undefined;
   kingOnCheck?: Square;
   selectedTile?: Square;
   playerSide: string;

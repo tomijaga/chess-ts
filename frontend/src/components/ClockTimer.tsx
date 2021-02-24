@@ -1,9 +1,11 @@
 import React, { FC, useState, useEffect } from "react";
 
+import { Side } from "types/Board";
+
 const ClockTimer: FC<{
   player_side: string;
   turn_to_play: string;
-  onTimeUp(winningSide: string): void;
+  onTimeUp(winningSide: Side): void;
 }> = ({ turn_to_play, player_side, onTimeUp, children }) => {
   const [startTime, setStartTime] = useState(60 * 10);
   const [player_1_time, set_player_1_time] = useState(startTime);
@@ -12,7 +14,7 @@ const ClockTimer: FC<{
   useEffect(() => {
     const interval = setInterval(() => {
       if (player_side !== "") {
-        const calculateTime = (winingSide: string) => (prevTime: number) => {
+        const calculateTime = (winingSide: Side) => (prevTime: number) => {
           if (prevTime <= 1) {
             clearInterval(interval);
             onTimeUp(winingSide);

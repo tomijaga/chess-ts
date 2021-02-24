@@ -9,3 +9,5 @@ export const SelectedTileContext = createContext({} as SelectedTile);
 export const GameClientContext = createContext({} as GameClient);
 
 export const TileDataContext = createContext({} as TileData);
+
+export const SocketIOContext = createContext({} as SocketIOClient.Socket);

@@ -46,11 +46,24 @@ db.once("open", async () => {
   });
 });
 
-const games = [];
+const games = {};
+let totalGames = 0;
 const connections = [];
 
 io.on("connection", function (socket) {
   connections.push(socket);
+
+  socket.on("create-game", (username, gameSettings) => {
+    create_game(gameSettings);
+  });
+
+  socket.on("join-game", (gameId, username) => {
+    join_game(gameId, username);
+  });
+
+  socket.on("get-game-details", (gameId) => {
+    socket.emit("game-details", games[gameId]);
+  });
 
   socket.on("connect-to-game", () => {
     const last_game = games[games.length - 1];
@@ -69,7 +82,7 @@ io.on("connection", function (socket) {
 
   socket.on("send-move", async (game_id, move, turn) => {
     OnlineGameModel.addMove(mongoose.Types.ObjectId(game_id), move);
-
+    console.log({ move });
     socket.to(game_id.toString()).emit("move", move, turn);
 
     // console.log({ game_id, move, turn });
@@ -92,27 +105,45 @@ io.on("connection", function (socket) {
 
   //functions
 
-  function create_game() {
-    const game = new Game();
-    game.add_player(socket.id);
-    socket.join(game.id.toString());
-    socket.emit("game-id", game.id);
+  function create_game(gameSettings) {
+    console.log({ gameSettings });
+    const game = new Game(gameSettings);
+    const gameId = game.id.toString();
+    games[gameId] = game;
+
+    join_game(gameId, gameSettings.username);
+
+    socket.emit("game-id", gameId);
 
     console.log("Created Game");
-    console.log("game id:", game.id, "player id:", socket.id);
-
-    games.push(game);
+    console.log("game id:", gameId, "player id:", socket.id);
   }
 
-  function start_game() {
-    const game = games[games.length - 1];
-    game.add_player(socket.id);
-    socket.join(game.id.toString());
-    socket.emit("game-id", game.id);
+  function join_game(gameId, username) {
+    const game = games[gameId];
+    console.log({ games });
+    console.log({ game, gameId, username });
+    if (game.players.length < 2) {
+      socket.join(gameId);
+      game.add_player(username);
+      console.log({ players: game.players });
+      // socket.emit("game-id", game.id);
+
+      if (games[gameId].players.length === 2) {
+        start_game(gameId);
+      }
+    } else {
+      throw new Error("Too many people in a game");
+    }
+  }
+
+  function start_game(gameId) {
+    const game = games[gameId];
+
     console.log("game id:", game.id, "player id:", socket.id);
 
     const sides = game.choose_sides();
-    io.to(game.id.toString()).emit("sides", sides);
+    io.to(game.id.toString()).emit("start-game", sides);
     console.log("chosen sides", sides);
 
     console.log("creating database record");
@@ -125,17 +156,20 @@ io.on("connection", function (socket) {
 
 class Game {
   players = [];
-  white = {};
-  black = {};
+  white = "";
+  black = "";
   moveHistory = [];
 
-  constructor() {
+  constructor(gameSettings) {
     this.id = mongoose.Types.ObjectId();
+
+    this.stakedAmount = gameSettings.stakedAmount;
+    this.time = gameSettings.time;
   }
 
-  add_player = (player_id) => {
+  add_player = (username) => {
     if (this.players.length < 2) {
-      this.players.push(new Player(player_id));
+      this.players.push(username);
     } else {
       throw new Error("Game is Full");
     }
@@ -143,7 +177,9 @@ class Game {
 
   choose_sides = () => {
     if (this.players.length === 2) {
-      switch (Math.round(Math.random())) {
+      const random = Math.round(Math.random() * 97);
+      console.log({ random });
+      switch (random % 2) {
         case 0:
           this.white = this.players[0];
           this.black = this.players[1];
@@ -153,17 +189,11 @@ class Game {
           this.black = this.players[0];
       }
 
-      return { white: this.white.id, black: this.black.id };
+      return { white: this.white, black: this.black };
     } else {
       throw new Error("Not enough players to choose sides");
     }
   };
 
   is_full = () => this.players.length === 2;
-}
-
-class Player {
-  constructor(id) {
-    this.id = id;
-  }
 }

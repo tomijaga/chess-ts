@@ -2,10 +2,13 @@ import React, { FC, useState, useEffect } from "react";
 import logo from "./logo.svg";
 import "./App.css";
 
-import Board from "containers/Board";
+import FriendBoard from "containers/FriendBoard";
+
 import BotVBotBoard from "containers/BotVBotBoard";
 import ReplayGameBoard from "containers/ReplayGameBoard";
 
+import CreateGameForm from "components/CreateGameForm";
+import { TwoPlayerBoard } from "containers/Boards";
 import { classic } from "designs/pieces";
 import { BoardClass } from "types/Board";
 
@@ -35,14 +38,14 @@ function App() {
 
   const [selectedGame, setSelectedGame] = useState<Game>();
 
-  useEffect(() => {
-    const SERVER = "http://localhost:8080";
-    axios.get(`${SERVER}/games`).then((res) => {
-      setGames(res.data);
-    });
+  // useEffect(() => {
+  //   const SERVER = "http://localhost:8080";
+  //   axios.get(`${SERVER}/games`).then((res) => {
+  //     setGames(res.data);
+  //   });
 
-    console.log(Bank);
-  }, []);
+  //   console.log(Bank);
+  // }, []);
 
   return (
     <div className="App">
@@ -58,11 +61,14 @@ function App() {
         </div>
         {/* <BoardContext.Provider> */}
         {boardType === "friend" ? (
-          <div>Coming Soon!</div>
+          <>{/* <FriendBoard />
+            <CreateGameForm /> */}</>
         ) : boardType === "botVbot" ? (
-          <BotVBotBoard />
+          {
+            /* <BotVBotBoard />*/
+          }
         ) : boardType === "online" ? (
-          <Board />
+          <TwoPlayerBoard />
         ) : boardType === "tournament" ? (
           <div>Coming Soon!</div>
         ) : boardType === "watch" ? (
@@ -72,7 +78,9 @@ function App() {
               return (
                 <>
                   {selectedGame !== undefined ? (
-                    <ReplayGameBoard game={selectedGame} />
+                    {
+                      /* <ReplayGameBoard game={selectedGame} />*/
+                    }
                   ) : (
                     <></>
                   )}
